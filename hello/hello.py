@@ -1,5 +1,8 @@
 
 from protobuf import Register_pb2 as register
+import struct
+import ctypes
+import binascii
 
 
 register_ = register.MobileRegister()
@@ -21,13 +24,40 @@ print(register_.SerializeToString())
 print(data_result)
 
 print("=============")
-data = [0x0, 0x1, 0x2]
-data[0] = bytearray(0X1100)
-daba_body = register_.SerializeToString()
-data[1] = bytearray(len(daba_body))
-data[2] = daba_body
 
+#data.append(0X1100)
+#data_body = register_.SerializeToString()
+#data.append(len(data_body))
+#data.append(data_body)
+
+print("bytes & bytearray")
+protocolType = 0X1100
+headerType = struct.pack('<h',protocolType)
+body = register_.SerializeToString()
+bodyLength = struct.pack('<i',len(body))
+
+data = (protocolType,len(body),body)
+
+len_body = len(body)
+
+print(type(body))
+dataStruct = struct.Struct("hi"+str(len_body)+"s")
+
+databuffer = ctypes.create_string_buffer(dataStruct.size)
+
+print(binascii.hexlify(databuffer))
+dataStruct.pack_into(databuffer,0,*data)
+print(binascii.hexlify(databuffer))
 print(data)
+
+temp = struct.pack('!his',protocolType,len(body),body)
+
+tempstr = struct.pack('@hip',protocolType,len(body),body)
+
+token  = struct.pack("h",protocolType)
+token+= struct.pack("i",len_body)
+
+print(token)
 
 
 

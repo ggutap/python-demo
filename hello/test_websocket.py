@@ -1,6 +1,7 @@
 import websocket
 import protobuf.Register_pb2 as register
 import struct
+import ctypes,binascii
 
 try:
     import thread
@@ -35,21 +36,31 @@ def send_register(ws):
     register_buf.protocolHeader.eid="eid001"
     register_buf.uid="uid001"
 
-    data = [0,0,0]
-    data[0] = bytearray(0X1100)
-    daba_body = register_buf.SerializeToString()
-    data[1] = bytearray(len(daba_body))
-    data[2] = daba_body
+
+    protocolType = 0X1100
+    headerType = struct.pack('<h',protocolType)
+    body = register_buf.SerializeToString()
+    body_length = len(body);
+
+    data = (protocolType,body_length,body)
+
+    data_struct = struct.Struct("hi"+str(body_length)+"s")
+    data_buffer = ctypes.create_string_buffer(data_struct.size)
 
 
+    data2 = [struct.pack('h',protocolType),struct.pack('i',body_length),body]
+    #print(binascii.b2a_hex(data2))
 
-    ws.send(data)
+    print(binascii.b2a_hex(struct.pack('hip',protocolType,body_length,body)))
+    #ws.send(data_struct.pack_into(data_buffer,0,*data))
+    ws.send(binascii.b2a_hex(struct.pack('hip',protocolType,body_length,body)))
+    #ws.send(data)
 
 
 
 if __name__ == "__main__":
     websocket.enableTrace(True)
-    ws = websocket.WebSocketApp("ws://localhost:8001",
+    ws = websocket.WebSocketApp("ws://192.168.0.222:8001",
                               on_message = on_message,
                               on_error = on_error,
                               on_close = on_close)
